@@ -318,3 +318,20 @@ final class EmailCodeTests: XCTestCase {
         XCTAssertFalse(CLILogin.looksLikeEmailCode("AQL99LOdXk#REd5Pu"))
     }
 }
+
+final class InAppSignInTests: XCTestCase {
+    func testCodeIsTakenOnlyFromTheAnthropicCallbackPage() {
+        let ok = URL(string: "https://platform.claude.com/oauth/code/callback?code=AbC123&state=XyZ")!
+        XCTAssertEqual(SignInWebView.callbackCode(from: ok), "AbC123#XyZ")
+        XCTAssertNil(SignInWebView.callbackCode(from: URL(string: "https://evil.example/oauth/code/callback?code=a&state=b")!))
+        XCTAssertNil(SignInWebView.callbackCode(from: URL(string: "https://platform.claude.com/oauth/code/callback?code=a")!))
+        XCTAssertNil(SignInWebView.callbackCode(from: URL(string: "http://platform.claude.com/oauth/code/callback?code=a&state=b")!))
+    }
+
+    func testOnlySignInHostsLoad() {
+        XCTAssertTrue(SignInWebView.isAllowed(URL(string: "https://claude.ai/login")!))
+        XCTAssertTrue(SignInWebView.isAllowed(URL(string: "https://accounts.google.com/o/oauth2")!))
+        XCTAssertFalse(SignInWebView.isAllowed(URL(string: "https://example.com/")!))
+        XCTAssertFalse(SignInWebView.isAllowed(URL(string: "http://claude.ai/")!))
+    }
+}
