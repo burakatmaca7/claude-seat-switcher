@@ -191,8 +191,11 @@ private struct LoginStatus: View {
                 }
             } else {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Sign in as **\(email.isEmpty ? "this account" : email)** below and approve. "
-                         + "The app picks up the code by itself — nothing to copy.")
+                    Text(LocalizedStringKey("Sign in as **\(email.isEmpty ? "this account" : email)** below and approve. "
+                         + "The app picks up the code by itself — nothing to copy."))
+                    Text(LocalizedStringKey("Claude emails a new code for this sign-in: use the code from the **newest** email, "
+                         + "and type it here — the email's link opens your browser, not this window."))
+                        .font(.caption).foregroundStyle(.secondary)
                     SignInWebView(url: url) { captured in login.submit(code: captured) }
                         .frame(height: 520)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -244,9 +247,9 @@ private struct LoginStatus: View {
                 }
                 Text("2. Approve on that page, then paste its authorization code:")
                 Label {
-                    Text("Use the **authorization code** shown after you press **Open sign-in page** above and approve. "
+                    Text(LocalizedStringKey("Use the **authorization code** shown after you press **Open sign-in page** above and approve. "
                          + "It is long and contains a #. It is **not** the 6-digit code from the sign-in email "
-                         + "— that one was for the Claude window.")
+                         + "— that one was for the Claude window."))
                 } icon: {
                     Image(systemName: "key.horizontal.fill")
                 }
