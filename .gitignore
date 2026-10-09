@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Xcode / Swift
+build/
+DerivedData/
+.build/
+*.xcuserstate
+xcuserdata/
+.swiftpm/
+
+# Local configuration and secrets — never commit
+*.local.json
+.env
+.env.*
+*.p12
+*.mobileprovision
