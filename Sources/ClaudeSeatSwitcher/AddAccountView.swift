@@ -184,7 +184,16 @@ private struct LoginStatus: View {
         case .waitingForCode(let url, let error):
             VStack(alignment: .leading, spacing: 10) {
                 Text("1. Open the sign-in page. Make sure your browser is signed in to claude.ai as **\(email.isEmpty ? "this account" : email)**.")
-                Button("Open sign-in page") { NSWorkspace.shared.open(url); pageOpened = true }
+                Text("The account signed in to claude.ai in your browser is the one that approves. To approve as a different account without signing out, copy the link into a private window.")
+                    .font(.caption).foregroundStyle(.secondary)
+                HStack {
+                    Button("Open sign-in page") { NSWorkspace.shared.open(url); pageOpened = true }
+                    Button("Copy sign-in link") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(url.absoluteString, forType: .string)
+                        pageOpened = true
+                    }
+                }
                 Text("2. Approve on that page, then paste its authorization code:")
                 Label {
                     Text("Use the **authorization code** shown after you press **Open sign-in page** above and approve. "
