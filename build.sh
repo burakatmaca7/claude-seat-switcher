@@ -10,8 +10,15 @@ BUNDLE_ID="io.github.burakatmaca7.claude-seat-switcher"
 VERSION=$(sed -n 's/.*static let version = "\(.*\)".*/\1/p' Sources/ClaudeSeatSwitcher/AppInfo.swift)
 [ -n "$VERSION" ] || { echo "Could not read the app version from AppInfo.swift" >&2; exit 1; }
 
-swift build -c release --arch arm64 --arch x86_64
-BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/ClaudeSeatSwitcher"
+# One architecture at a time, then join: building both in one invocation fails on some Xcode versions.
+for ARCH in arm64 x86_64; do
+    swift build -c release --arch "$ARCH"
+done
+mkdir -p build
+BIN="build/ClaudeSeatSwitcher-universal"
+lipo -create -output "$BIN" \
+    "$(swift build -c release --arch arm64 --show-bin-path)/ClaudeSeatSwitcher" \
+    "$(swift build -c release --arch x86_64 --show-bin-path)/ClaudeSeatSwitcher"
 
 APP="build/$APP_NAME.app"
 rm -rf "$APP"
