@@ -130,7 +130,7 @@ final class AppModel: ObservableObject {
     }
 
     /// True if any account already uses the default Claude Code login (only one may).
-    var defaultLoginInUse: Bool { accounts.contains { $0.cliConfigDir == nil } }
+    var defaultLoginInUse: Bool { accounts.contains { $0.tracksUsage && $0.cliConfigDir == nil } }
 
     // MARK: Derived
 
@@ -204,7 +204,7 @@ final class AppModel: ObservableObject {
         running = await offload { ClaudeDesktop.running() }
         let now = Date()
         await withTaskGroup(of: (String, UsageState).self) { group in
-            for account in accounts {
+            for account in accounts where account.tracksUsage {
                 let hot = (effectivePercent(account.id) ?? 0) >= Self.busyPercent
                 let since = now.timeIntervalSince(lastFetch[account.id] ?? .distantPast)
                 let due = since >= (hot ? Self.tick - 5 : Self.normalInterval - 5)
@@ -241,7 +241,7 @@ final class AppModel: ObservableObject {
     private func syncHistory() async {
         let accounts = self.accounts
         await offload {
-            let members = accounts.compactMap { a -> SessionSharing.Member? in
+            let members = accounts.filter(\.tracksUsage).compactMap { a -> SessionSharing.Member? in
                 guard let p = ClaudeCLI.profile(configDir: a.cliConfigDir) else { return nil }
                 return .init(accountUUID: p.accountUUID, organizationUUID: p.organizationUUID)
             }
@@ -344,6 +344,9 @@ enum AccountStore {
         var defaultLoginSeen = false
         return all.filter { a in
             guard Account.isValidID(a.id), seen.insert(a.id).inserted else { return false }
+            if !a.tracksUsage {
+                return true                    // window only: no sign-in to share
+            }
             if let dir = a.cliConfigDir {
                 // Two accounts on one sign-in would refresh the same token concurrently.
                 guard dirs.insert(Credentials.serviceName(cliConfigDir: dir)).inserted else { return false }

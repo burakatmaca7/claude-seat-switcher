@@ -9,6 +9,7 @@ struct AddAccountView: View {
     enum UsageSource: String, CaseIterable, Identifiable {
         case newSignIn = "Sign in for usage now (recommended)"
         case defaultLogin = "Use my existing Claude Code login"
+        case skip = "Skip — window only (no usage data)"
         var id: String { rawValue }
     }
 
@@ -40,6 +41,10 @@ struct AddAccountView: View {
         .frame(width: 540)
         .background(FloatingWindow())
         .onAppear {
+            // The window keeps its state between openings; always start a fresh wizard.
+            step = .details; id = ""; email = ""; label = ""; code = ""; role = .interactive
+            source = .newSignIn; activeLogin = nil; createdProfileID = nil; saved = false
+            window = hasMainAccount ? .profile : .main
             if !hasMainAccount { window = .main }
             if model.defaultLoginInUse { source = .newSignIn }
         }
@@ -71,6 +76,7 @@ struct AddAccountView: View {
                     Text(UsageSource.newSignIn.rawValue).tag(UsageSource.newSignIn)
                     Text(UsageSource.defaultLogin.rawValue).tag(UsageSource.defaultLogin)
                         .disabled(model.defaultLoginInUse)
+                    Text(UsageSource.skip.rawValue).tag(UsageSource.skip)
                 }
             }
             if model.defaultLoginInUse {
@@ -119,6 +125,10 @@ struct AddAccountView: View {
     // MARK: Step 3
 
     private func startUsageStep() {
+        if source == .skip {
+            finish(cliConfigDir: nil, windowOnly: true)
+            return
+        }
         if source == .defaultLogin && !model.defaultLoginInUse {
             finish(cliConfigDir: nil)
             return
@@ -136,6 +146,9 @@ struct AddAccountView: View {
                 LoginStatus(login: l, email: email, code: $code,
                             onRetry: { l.cancel(); l.start() },
                             onDone: { finish(cliConfigDir: l.configDir.path) })
+            } else {
+                // Never an empty step: the sign-in was stopped (window closed and reopened).
+                Button("Restart sign-in") { startUsageStep() }
             }
             HStack {
                 Button("Cancel") { dismiss() }
@@ -144,9 +157,10 @@ struct AddAccountView: View {
         }
     }
 
-    private func finish(cliConfigDir: String?) {
+    private func finish(cliConfigDir: String?, windowOnly: Bool = false) {
         let stored = cliConfigDir.map { $0.replacingOccurrences(of: Paths.home.path, with: "~") }
-        model.add(Account(id: id, email: email, label: label, window: window, role: role, cliConfigDir: stored))
+        model.add(Account(id: id, email: email, label: label, window: window, role: role, cliConfigDir: stored,
+                          windowOnly: windowOnly ? true : nil))
         saved = true
         dismiss()
     }

@@ -136,7 +136,11 @@ struct AccountRow: View {
             }
             if let removeError { Text(removeError).font(.caption).foregroundStyle(.red) }
 
-            UsageStateView(state: model.usage[account.id] ?? .unknown)
+            if account.tracksUsage {
+                UsageStateView(state: model.usage[account.id] ?? .unknown)
+            } else {
+                Text("window only — no usage data").font(.caption).foregroundStyle(.secondary)
+            }
         }
     }
 }

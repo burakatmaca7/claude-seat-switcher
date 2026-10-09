@@ -45,6 +45,10 @@ struct Account: Codable, Identifiable, Hashable {
     /// Claude Code CLI config directory holding this account's sign-in.
     /// `nil` means the user's default CLI login (`~/.claude`), which other tools may share.
     var cliConfigDir: String?
+    /// Window switching only: no usage sign-in, never fetched, shown without bars.
+    var windowOnly: Bool?
+
+    var tracksUsage: Bool { windowOnly != true }
 
     /// True only for the CLI profile this app created for this account (`CLIProfiles/<id>`), the only
     /// sign-in it may refresh. Any other folder — the default login, or a path typed into the accounts
