@@ -174,8 +174,6 @@ private struct LoginStatus: View {
     let onDone: () -> Void
     @State private var acceptMismatch = false
     @State private var emailCodeWarning = false
-    /// Fallback to the user's browser (e.g. when the identity provider refuses embedded sign-in).
-    @State private var useBrowser = false
     /// The code field opens only after the sign-in page was opened: the code must come from there.
     @State private var pageOpened = false
 
@@ -184,27 +182,7 @@ private struct LoginStatus: View {
         case .idle:
             ProgressView("Starting sign-in…")
         case .waitingForCode(let url, let error):
-            if useBrowser {
-                VStack(alignment: .leading, spacing: 10) {
-                    browserFlow(url: url, error: error)
-                    Button("← Sign in inside the app instead") { useBrowser = false }.buttonStyle(.link)
-                }
-            } else {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(LocalizedStringKey("Sign in as **\(email.isEmpty ? "this account" : email)** below and approve. "
-                         + "The app picks up the code by itself — nothing to copy."))
-                    Text(LocalizedStringKey("Claude emails a sign-in link. Open the link in the **newest** email: your browser "
-                         + "shows a verification code — type that code here. (Each new email makes the older ones invalid.)"))
-                        .font(.caption).foregroundStyle(.secondary)
-                    SignInWebView(url: url) { captured in login.submit(code: captured) }
-                        .frame(height: 520)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(.separator))
-                    if let error { Text(error).font(.caption).foregroundStyle(.red) }
-                    Button("Trouble signing in here (e.g. Google sign-in)? Use your browser instead") { useBrowser = true }
-                        .buttonStyle(.link).font(.caption)
-                }
-            }
+            browserFlow(url: url, error: error)
         case .finishing:
             ProgressView("Finishing…")
         case .done(let signedIn):
@@ -235,9 +213,15 @@ private struct LoginStatus: View {
     private func browserFlow(url: URL, error: String?) -> some View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("1. Open the sign-in page. Make sure your browser is signed in to claude.ai as **\(email.isEmpty ? "this account" : email)**.")
-                Text("The account signed in to claude.ai in your browser is the one that approves. To approve as a different account without signing out, copy the link into a private window.")
+                Text("The account signed in to claude.ai in your browser is the one that approves. A private window has nobody signed in, so you approve as the account you are adding.")
                     .font(.caption).foregroundStyle(.secondary)
                 HStack {
+                    if let browser = PrivateBrowser.installed() {
+                        Button("Open in a private \(browser.name) window") {
+                            if !browser.open(url) { NSWorkspace.shared.open(url) }
+                            pageOpened = true
+                        }
+                    }
                     Button("Open sign-in page") { NSWorkspace.shared.open(url); pageOpened = true }
                     Button("Copy sign-in link") {
                         NSPasteboard.general.clearContents()

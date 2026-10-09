@@ -319,19 +319,16 @@ final class EmailCodeTests: XCTestCase {
     }
 }
 
-final class InAppSignInTests: XCTestCase {
-    func testCodeIsTakenOnlyFromTheAnthropicCallbackPage() {
-        let ok = URL(string: "https://platform.claude.com/oauth/code/callback?code=AbC123&state=XyZ")!
-        XCTAssertEqual(SignInWebView.callbackCode(from: ok), "AbC123#XyZ")
-        XCTAssertNil(SignInWebView.callbackCode(from: URL(string: "https://evil.example/oauth/code/callback?code=a&state=b")!))
-        XCTAssertNil(SignInWebView.callbackCode(from: URL(string: "https://platform.claude.com/oauth/code/callback?code=a")!))
-        XCTAssertNil(SignInWebView.callbackCode(from: URL(string: "http://platform.claude.com/oauth/code/callback?code=a&state=b")!))
+final class PrivateBrowserTests: XCTestCase {
+    func testPrivateWindowFlagsPerBrowser() {
+        XCTAssertEqual(PrivateBrowser.known.first { $0.name == "Chrome" }?.flag, "--incognito")
+        XCTAssertEqual(PrivateBrowser.known.first { $0.name == "Firefox" }?.flag, "--private-window")
+        XCTAssertEqual(PrivateBrowser.known.first { $0.name == "Edge" }?.flag, "--inprivate")
     }
 
-    func testOnlySignInHostsLoad() {
-        XCTAssertTrue(SignInWebView.isAllowed(URL(string: "https://claude.ai/login")!))
-        XCTAssertTrue(SignInWebView.isAllowed(URL(string: "https://accounts.google.com/o/oauth2")!))
-        XCTAssertFalse(SignInWebView.isAllowed(URL(string: "https://example.com/")!))
-        XCTAssertFalse(SignInWebView.isAllowed(URL(string: "http://claude.ai/")!))
+    func testOnlyAnthropicSignInLinksAreOpened() {
+        let chrome = PrivateBrowser.known[0]
+        XCTAssertFalse(chrome.open(URL(string: "https://evil.example/oauth/authorize")!, dryRun: true))
+        XCTAssertTrue(chrome.open(URL(string: "https://claude.com/cai/oauth/authorize?code=true")!, dryRun: true))
     }
 }
