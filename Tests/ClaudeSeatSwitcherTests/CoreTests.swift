@@ -290,3 +290,23 @@ final class OwnershipTests: XCTestCase {
         XCTAssertFalse(Account(id: "work", email: "", cliConfigDir: nil).ownsCLIProfile)
     }
 }
+
+final class AddAccountFixTests: XCTestCase {
+    func testSuggestedIDTurnsTypedNamesIntoValidIDs() {
+        XCTAssertEqual(Account.suggestedID(from: "Ali Work"), "ali-work")
+        XCTAssertEqual(Account.suggestedID(from: "Çalışma 2"), "calisma-2")
+        XCTAssertEqual(Account.suggestedID(from: "İşçi"), "isci")
+        XCTAssertEqual(Account.suggestedID(from: "dev2"), "dev2")
+        XCTAssertTrue(Account.isValidID(Account.suggestedID(from: "A very long account name for testing")))
+    }
+
+    func testSignInURLSkipsUnrelatedLinksPrintedFirst() {
+        let out = """
+        Update available: https://docs.claude.com/changelog
+        If the browser didn't open, visit: https://claude.com/cai/oauth/authorize?code=true&state=abc
+        Paste code here if prompted >
+        """
+        XCTAssertEqual(CLILogin.firstSignInURL(in: out)?.host, "claude.com")
+        XCTAssertNil(CLILogin.firstSignInURL(in: "visit https://evil.example/oauth/authorize?x \n"))
+    }
+}

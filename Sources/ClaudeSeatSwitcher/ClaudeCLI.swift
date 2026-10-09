@@ -70,7 +70,7 @@ final class CLILogin: ObservableObject {
     }
 
     /// Hosts allowed for the sign-in page opened in the browser.
-    static let allowedHosts: Set<String> = ["claude.ai", "claude.com", "platform.claude.com", "console.anthropic.com"]
+    nonisolated static let allowedHosts: Set<String> = ["claude.ai", "claude.com", "platform.claude.com", "console.anthropic.com"]
 
     @Published var phase: Phase = .idle
     private var process: Process?
@@ -90,7 +90,7 @@ final class CLILogin: ObservableObject {
     }
 
     /// Accepts only an https sign-in page on an Anthropic host.
-    static func validSignInURL(_ s: String) -> URL? {
+    nonisolated static func validSignInURL(_ s: String) -> URL? {
         guard let url = URL(string: s), url.scheme == "https", let host = url.host?.lowercased(),
               allowedHosts.contains(host), url.path.contains("/oauth/authorize") else { return nil }
         return url
@@ -156,6 +156,24 @@ final class CLILogin: ObservableObject {
         }
     }
 
+    /// The first complete https link in `text` that is a valid Anthropic sign-in page, if any.
+    nonisolated static func firstSignInURL(in text: String) -> URL? {
+        guard let re = try? NSRegularExpression(pattern: #"https://\S+(?=\s)"#) else { return nil }
+        let ns = text as NSString
+        for m in re.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+            if let url = validSignInURL(ns.substring(with: m.range)) { return url }
+        }
+        return nil
+    }
+
+    /// The last lines Claude Code printed, with sign-in secrets (state, code challenge) removed — safe to copy
+    /// into a bug report.
+    var diagnostics: String {
+        let lines = buffer.split(separator: "\n", omittingEmptySubsequences: true).suffix(12).joined(separator: "\n")
+        return lines.replacingOccurrences(of: #"(state|code_challenge|code)=[^&\s]+"#, with: "$1=…",
+                                          options: .regularExpression)
+    }
+
     func submit(code: String) {
         let trimmed = code.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !trimmed.contains("\n"), let input else { return }
@@ -177,14 +195,10 @@ final class CLILogin: ObservableObject {
     private func consume(_ text: String) {
         buffer += text
         if buffer.count > 64_000 { buffer = String(buffer.suffix(16_000)) }
-        // The URL counts only once it is followed by whitespace: output arrives in chunks.
+        // A URL counts only once it is followed by whitespace: output arrives in chunks. Other links the CLI may
+        // print first (update notes, docs) are skipped; only an https Anthropic sign-in page is ever opened.
         if signInURL == nil,
-           let range = buffer.range(of: #"https://\S+(?=\s)"#, options: .regularExpression) {
-            guard let url = Self.validSignInURL(String(buffer[range])) else {
-                cancel()
-                phase = .failed("Unexpected sign-in address from Claude Code — stopped for safety.")
-                return
-            }
+           let url = Self.firstSignInURL(in: buffer) {
             signInURL = url
             phase = .waitingForCode(url, error: nil)
             return

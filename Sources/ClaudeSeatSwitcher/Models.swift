@@ -23,6 +23,21 @@ struct Account: Codable, Identifiable, Hashable {
     static func isValidID(_ id: String) -> Bool {
         id.range(of: #"^[a-z0-9][a-z0-9-]{0,19}$"#, options: .regularExpression) != nil
     }
+
+    /// Turns what people type ("Ali Work", "Çalışma 2") into a valid short name ("ali-work", "calisma-2").
+    static func suggestedID(from text: String) -> String {
+        let latin = text.applyingTransform(.toLatin, reverse: false) ?? text
+        let folded = latin.folding(options: [.diacriticInsensitive, .caseInsensitive, .widthInsensitive], locale: .init(identifier: "en"))
+            .lowercased()
+            .replacingOccurrences(of: "ı", with: "i")
+        var out = ""
+        for ch in folded {
+            if ch.isASCII && (ch.isLetter || ch.isNumber) { out.append(ch) }
+            else if !out.isEmpty && out.last != "-" { out.append("-") }
+        }
+        while out.hasSuffix("-") { out.removeLast() }
+        return String(out.prefix(20)).trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+    }
     var email: String
     var label: String = ""
     var window: Window = .profile

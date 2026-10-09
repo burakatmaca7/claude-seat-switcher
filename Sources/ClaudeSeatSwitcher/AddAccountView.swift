@@ -38,6 +38,7 @@ struct AddAccountView: View {
         }
         .padding(20)
         .frame(width: 480)
+        .background(FloatingWindow())
         .onAppear {
             if !hasMainAccount { window = .main }
             if model.defaultLoginInUse { source = .newSignIn }
@@ -52,6 +53,10 @@ struct AddAccountView: View {
             Text("Add an account").font(.title2.bold())
             Form {
                 TextField("Short name", text: $id, prompt: Text("e.g. work, dev2"))
+                    .onChange(of: id) { _, new in
+                        let fixed = Account.suggestedID(from: new)
+                        if fixed != new && !new.hasSuffix(" ") && !new.hasSuffix("-") { id = fixed }
+                    }
                 TextField("Email", text: $email, prompt: Text("the account's email"))
                 TextField("Label (optional)", text: $label)
                 Picker("Window", selection: $window) {
@@ -194,7 +199,20 @@ private struct LoginStatus: View {
         case .failed(let message):
             VStack(alignment: .leading, spacing: 8) {
                 Label(message, systemImage: "xmark.octagon").foregroundStyle(.red)
-                Button("Try again", action: onRetry)
+                if !login.diagnostics.isEmpty {
+                    ScrollView {
+                        Text(login.diagnostics).font(.caption.monospaced()).textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: 90)
+                }
+                HStack {
+                    Button("Try again", action: onRetry)
+                    Button("Copy details") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString("\(message)\n\n\(login.diagnostics)", forType: .string)
+                    }
+                }
             }
         }
     }
@@ -225,5 +243,18 @@ private struct DoneView: View {
                 .keyboardShortcut(.defaultAction)
                 .disabled(mismatch && !acceptMismatch)
         }
+    }
+}
+
+/// Keeps the wizard above other windows. The app has no Dock icon, so when step 2 brings a new Claude window to
+/// the front the wizard would otherwise sit behind it with no way to Cmd-Tab back.
+private struct FloatingWindow: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let v = NSView()
+        DispatchQueue.main.async { v.window?.level = .floating }
+        return v
+    }
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async { nsView.window?.level = .floating }
     }
 }
