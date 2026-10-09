@@ -193,8 +193,8 @@ private struct LoginStatus: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(LocalizedStringKey("Sign in as **\(email.isEmpty ? "this account" : email)** below and approve. "
                          + "The app picks up the code by itself — nothing to copy."))
-                    Text(LocalizedStringKey("Claude emails a new code for this sign-in: use the code from the **newest** email, "
-                         + "and type it here — the email's link opens your browser, not this window."))
+                    Text(LocalizedStringKey("Claude emails a sign-in link. Open the link in the **newest** email: your browser "
+                         + "shows a verification code — type that code here. (Each new email makes the older ones invalid.)"))
                         .font(.caption).foregroundStyle(.secondary)
                     SignInWebView(url: url) { captured in login.submit(code: captured) }
                         .frame(height: 520)
