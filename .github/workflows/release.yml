@@ -1,0 +1,63 @@
+name: Release
+
+# Builds the app on GitHub's macOS runners from the tagged source, so every published zip is
+# traceable to a commit, and attaches a signed build-provenance attestation.
+# Push a tag like v0.1.0 to publish. Third-party actions are pinned to full commit SHAs.
+on:
+  push:
+    tags: ["v*"]
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: macos-15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check tag matches app version
+        run: |
+          v=$(sed -n 's/.*static let version = "\(.*\)".*/\1/p' Sources/ClaudeSeatSwitcher/AppInfo.swift)
+          test -n "$v" && test "v$v" = "$GITHUB_REF_NAME" || { echo "Tag $GITHUB_REF_NAME != app version '$v'"; exit 1; }
+      - name: Test
+        run: swift test
+      - name: Build
+        run: ./build.sh
+      - name: Check universal binary
+        run: lipo -archs "build/Claude Seat Switcher.app/Contents/MacOS/ClaudeSeatSwitcher" | grep -q "x86_64 arm64\|arm64 x86_64"
+      - name: Package
+        run: |
+          cd build
+          ditto -c -k --keepParent "Claude Seat Switcher.app" "Claude-Seat-Switcher-$GITHUB_REF_NAME.zip"
+          shasum -a 256 "Claude-Seat-Switcher-$GITHUB_REF_NAME.zip" | tee "Claude-Seat-Switcher-$GITHUB_REF_NAME.zip.sha256"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: build/Claude-Seat-Switcher-*.zip*
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # create the release
+      id-token: write       # sign the provenance attestation
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: Claude-Seat-Switcher-*.zip
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "Claude-Seat-Switcher-$GITHUB_REF_NAME.zip" \
+            "Claude-Seat-Switcher-$GITHUB_REF_NAME.zip.sha256" \
+            --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
