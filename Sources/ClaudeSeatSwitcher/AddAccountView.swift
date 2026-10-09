@@ -174,6 +174,8 @@ private struct LoginStatus: View {
     let onDone: () -> Void
     @State private var acceptMismatch = false
     @State private var emailCodeWarning = false
+    /// The code field opens only after the sign-in page was opened: the code must come from there.
+    @State private var pageOpened = false
 
     var body: some View {
         switch login.phase {
@@ -182,10 +184,24 @@ private struct LoginStatus: View {
         case .waitingForCode(let url, let error):
             VStack(alignment: .leading, spacing: 10) {
                 Text("1. Open the sign-in page. Make sure your browser is signed in to claude.ai as **\(email.isEmpty ? "this account" : email)**.")
-                Button("Open sign-in page") { NSWorkspace.shared.open(url) }
-                Text("2. Approve, then paste the **long code the page shows** (not the 6-digit code from the sign-in email):")
+                Button("Open sign-in page") { NSWorkspace.shared.open(url); pageOpened = true }
+                Text("2. Approve on that page, then paste its authorization code:")
+                Label {
+                    Text("Use the **authorization code** shown after you press **Open sign-in page** above and approve. "
+                         + "It is long and contains a #. It is **not** the 6-digit code from the sign-in email "
+                         + "— that one was for the Claude window.")
+                } icon: {
+                    Image(systemName: "key.horizontal.fill")
+                }
+                .font(.callout)
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.accentColor.opacity(0.5)))
                 HStack {
-                    SecureField("Code from the sign-in page", text: $code)
+                    SecureField(pageOpened ? "Authorization code from the sign-in page" : "Open the sign-in page first",
+                                text: $code)
+                        .disabled(!pageOpened)
                     Button("Submit") {
                         if CLILogin.looksLikeEmailCode(code) {
                             emailCodeWarning = true          // never sent: a wrong code would use up this sign-in
