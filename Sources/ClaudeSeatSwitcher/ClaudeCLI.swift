@@ -156,6 +156,12 @@ final class CLILogin: ObservableObject {
         }
     }
 
+    /// The sign-in email's short numeric code (for the Claude window), not the page's long OAuth code.
+    nonisolated static func looksLikeEmailCode(_ text: String) -> Bool {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (4...8).contains(t.count) && t.allSatisfy(\.isNumber)
+    }
+
     /// The first complete https link in `text` that is a valid Anthropic sign-in page, if any.
     nonisolated static func firstSignInURL(in text: String) -> URL? {
         guard let re = try? NSRegularExpression(pattern: #"https://\S+(?=\s)"#) else { return nil }

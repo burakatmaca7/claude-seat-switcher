@@ -173,6 +173,7 @@ private struct LoginStatus: View {
     let onRetry: () -> Void
     let onDone: () -> Void
     @State private var acceptMismatch = false
+    @State private var emailCodeWarning = false
 
     var body: some View {
         switch login.phase {
@@ -182,14 +183,31 @@ private struct LoginStatus: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("1. Open the sign-in page. Make sure your browser is signed in to claude.ai as **\(email.isEmpty ? "this account" : email)**.")
                 Button("Open sign-in page") { NSWorkspace.shared.open(url) }
-                Text("2. Approve, then paste the code the page shows:")
+                Text("2. Approve, then paste the **long code the page shows** (not the 6-digit code from the sign-in email):")
                 HStack {
-                    SecureField("Code", text: $code)
-                    Button("Submit") { login.submit(code: code); code = "" }
+                    SecureField("Code from the sign-in page", text: $code)
+                    Button("Submit") {
+                        if CLILogin.looksLikeEmailCode(code) {
+                            emailCodeWarning = true          // never sent: a wrong code would use up this sign-in
+                        } else {
+                            emailCodeWarning = false
+                            login.submit(code: code)
+                        }
+                        code = ""
+                    }
                         .disabled(code.isEmpty)
                         .keyboardShortcut(.defaultAction)
                 }
-                if let error { Text(error).font(.caption).foregroundStyle(.red) }
+                if emailCodeWarning {
+                    Text("That looks like the 6-digit code from the email — that one is for the Claude window. Paste the long code from the sign-in page instead.")
+                        .font(.caption).foregroundStyle(.orange)
+                } else if let error {
+                    Text(error).font(.caption).foregroundStyle(.red)
+                    if !login.diagnostics.isEmpty {
+                        Text(login.diagnostics).font(.caption2.monospaced()).foregroundStyle(.secondary)
+                            .textSelection(.enabled).lineLimit(4)
+                    }
+                }
             }
         case .finishing:
             ProgressView("Finishing…")

@@ -310,3 +310,11 @@ final class AddAccountFixTests: XCTestCase {
         XCTAssertNil(CLILogin.firstSignInURL(in: "visit https://evil.example/oauth/authorize?x \n"))
     }
 }
+
+final class EmailCodeTests: XCTestCase {
+    func testEmailCodeIsCaughtBeforeItUsesUpTheSignIn() {
+        XCTAssertTrue(CLILogin.looksLikeEmailCode("482913"))
+        XCTAssertTrue(CLILogin.looksLikeEmailCode(" 482913\n"))
+        XCTAssertFalse(CLILogin.looksLikeEmailCode("AQL99LOdXk#REd5Pu"))
+    }
+}
