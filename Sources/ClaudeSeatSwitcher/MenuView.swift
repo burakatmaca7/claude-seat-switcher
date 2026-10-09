@@ -61,6 +61,7 @@ struct MenuView: View {
                     Toggle("Run status-line scripts", isOn: $model.runStatusLines)
                     Button("Open status-line scripts folder") { NSWorkspace.shared.open(Paths.statusLines) }
                     Toggle("Check for updates daily", isOn: $model.checkForUpdates)
+                    Toggle("Open at login", isOn: $model.openAtLogin)
                     Divider()
                     Button("Open accounts file") { NSWorkspace.shared.open(Paths.accountsFile) }
                     Button("About / source code") { NSWorkspace.shared.open(AppInfo.repository) }

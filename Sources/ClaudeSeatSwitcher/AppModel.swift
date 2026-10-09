@@ -28,6 +28,9 @@ final class AppModel: ObservableObject {
     @Published var shareHistory: Bool {
         didSet { UserDefaults.standard.set(shareHistory, forKey: "shareHistory") }
     }
+    @Published var openAtLogin = false {
+        didSet { if !Self.isDemo, openAtLogin != LoginItem.isEnabled { LoginItem.set(openAtLogin) } }
+    }
     /// Off by default: running scripts from a folder is opt-in.
     @Published var runStatusLines: Bool {
         didSet { UserDefaults.standard.set(runStatusLines, forKey: "runStatusLines") }
@@ -63,6 +66,8 @@ final class AppModel: ObservableObject {
         }
         shareHistory = d.object(forKey: "shareHistory") as? Bool ?? true
         checkForUpdates = d.object(forKey: "checkForUpdates") as? Bool ?? true
+        LoginItem.enableOnFirstLaunch()
+        openAtLogin = LoginItem.isEnabled
         runStatusLines = d.object(forKey: "runStatusLines") as? Bool ?? false
         alerted = Set(d.stringArray(forKey: "alerted") ?? [])
         Paths.ensureDirectories()
