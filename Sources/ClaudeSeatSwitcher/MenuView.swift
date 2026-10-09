@@ -55,6 +55,8 @@ struct MenuView: View {
                 } label: { Image(systemName: "arrow.clockwise") }
                     .help("Refresh now")
                 Menu {
+                    Toggle("Compact menu bar (gauge + active %)", isOn: $model.compactMenuBar)
+                    Divider()
                     Toggle("Share Code-tab history across accounts", isOn: $model.shareHistory)
                     Button("Undo history sharing…") { confirmUndo = true }
                     Divider()

@@ -31,6 +31,11 @@ final class AppModel: ObservableObject {
     @Published var openAtLogin = false {
         didSet { if !Self.isDemo, openAtLogin != LoginItem.isEnabled { LoginItem.set(openAtLogin) } }
     }
+    /// On by default: the menu bar shows only the gauge and one percentage, so macOS does not hide it
+    /// when the menu bar is crowded. Off = account names and percentages, as before.
+    @Published var compactMenuBar: Bool {
+        didSet { UserDefaults.standard.set(compactMenuBar, forKey: "compactMenuBar") }
+    }
     /// Off by default: running scripts from a folder is opt-in.
     @Published var runStatusLines: Bool {
         didSet { UserDefaults.standard.set(runStatusLines, forKey: "runStatusLines") }
@@ -58,6 +63,7 @@ final class AppModel: ObservableObject {
         let d = UserDefaults.standard
         if Self.isDemo {
             shareHistory = true
+            compactMenuBar = false
             checkForUpdates = false
             runStatusLines = true
             alerted = []
@@ -65,6 +71,7 @@ final class AppModel: ObservableObject {
             return
         }
         shareHistory = d.object(forKey: "shareHistory") as? Bool ?? true
+        compactMenuBar = d.object(forKey: "compactMenuBar") as? Bool ?? true
         checkForUpdates = d.object(forKey: "checkForUpdates") as? Bool ?? true
         LoginItem.enableOnFirstLaunch()
         openAtLogin = LoginItem.isEnabled
@@ -166,6 +173,12 @@ final class AppModel: ObservableObject {
         let known = accounts.filter { sessionPercent($0.id) != nil }
         guard !known.isEmpty else { return "" }
         func pct(_ id: String) -> String { "\(Int((sessionPercent(id) ?? 0).rounded()))%" }
+        if compactMenuBar {
+            // The session in use: the fullest 5-hour limit among open windows (several may be open).
+            let open = known.filter { $0.tracksUsage && isOpen($0) }
+            guard let top = open.max(by: { (sessionPercent($0.id) ?? 0) < (sessionPercent($1.id) ?? 0) }) else { return "" }
+            return pct(top.id)
+        }
         if accounts.count <= 3 {
             let names = shortNames
             return accounts.map { "\(names[$0.id] ?? $0.id) \(sessionPercent($0.id) == nil ? "?" : pct($0.id))" }

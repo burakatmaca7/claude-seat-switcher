@@ -30,7 +30,8 @@ removes all of that.
 - **Shared Code-tab history** — conversations from one account appear in the others' sidebar (same organization only), so you can pick up a conversation on another seat. It never overwrites a file; undo removes only copies you have not continued in, and a conversation you delete is not copied back.
 - **Automation accounts** — mark a seat used by scripts or `claude -p` jobs. It is never suggested for interactive work, and you get told when it hits its limit.
 - **Custom status lines** (opt-in) — turn it on in the menu, then drop an executable script into the folder; its first output line becomes a line in the menu (build server, CI, a background worker…). Only scripts owned by you and not writable by others are run. A symlinked script gets the link's name in `STATUS_LINE_NAME`, so one script can serve several lines.
-- **Scales to many seats** — with 4+ accounts the menu bar shows only your open windows and the account with the most room; idle accounts are polled less often.
+- **Compact menu bar** — by default only the gauge and the 5-hour usage of the window you are using (the fullest one if several are open), so macOS does not hide it in a crowded menu bar. Click it for every account. Turn it off in ⚙ to see account names.
+- **Scales to many seats** — with names shown and 4+ accounts, the menu bar lists only your open windows and the account with the most room; idle accounts are polled less often.
 - **Opens at login** — starts with your Mac (turn it off in the menu).
 - **Update notice** — checks GitHub once a day and shows a download button when a new version is out (can be turned off).
 
