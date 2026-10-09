@@ -335,7 +335,7 @@ final class PrivateBrowserTests: XCTestCase {
 
 final class WindowOnlyTests: XCTestCase {
     func testOldAccountsFilesStillTrackUsageAndWindowOnlyDoesNot() throws {
-        let old = try JSONDecoder().decode(Account.self, from: Data(#"{"id":"work","email":"a@b.c","window":"profile","role":"interactive"}"#.utf8))
+        let old = try JSONDecoder().decode(Account.self, from: Data(#"{"id":"work","email":"a@b.c","label":"","window":"profile","role":"interactive"}"#.utf8))
         XCTAssertTrue(old.tracksUsage)
         let w = Account(id: "old", email: "x@y.z", window: .profile, windowOnly: true)
         XCTAssertFalse(w.tracksUsage)
