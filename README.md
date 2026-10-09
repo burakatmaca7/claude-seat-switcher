@@ -29,7 +29,7 @@ removes all of that.
 - **One window per account** — each account runs in its own Claude Desktop window and stays signed in. Click **Show** to bring it forward.
 - **Shared Code-tab history** — conversations from one account appear in the others' sidebar (same organization only), so you can pick up a conversation on another seat. It never overwrites a file; undo removes only copies you have not continued in, and a conversation you delete is not copied back.
 - **Automation accounts** — mark a seat used by scripts or `claude -p` jobs. It is never suggested for interactive work, and you get told when it hits its limit.
-- **Custom status lines** (opt-in) — turn it on in the menu, then drop an executable script into the folder; its first output line becomes a line in the menu (build server, CI, a background worker…). Only scripts owned by you and not writable by others are run.
+- **Custom status lines** (opt-in) — turn it on in the menu, then drop an executable script into the folder; its first output line becomes a line in the menu (build server, CI, a background worker…). Only scripts owned by you and not writable by others are run. A symlinked script gets the link's name in `STATUS_LINE_NAME`, so one script can serve several lines.
 - **Scales to many seats** — with 4+ accounts the menu bar shows only your open windows and the account with the most room; idle accounts are polled less often.
 - **Opens at login** — starts with your Mac (turn it off in the menu).
 - **Update notice** — checks GitHub once a day and shows a download button when a new version is out (can be turned off).

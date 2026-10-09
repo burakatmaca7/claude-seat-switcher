@@ -35,7 +35,11 @@ enum StatusLines {
                 guard isTrusted(path, directory: false), fm.isExecutableFile(atPath: path) else {
                     return StatusLine(id: name, text: "\(name): skipped (not owned by you, or writable by others)", level: .warning)
                 }
-                let r = Shell.run(path, [], environment: safeEnvironment, timeout: 5)
+                // The script runs from its resolved path (that is what was checked above), so it cannot see the
+                // name it was linked under; that name is passed along for scripts shared by several entries.
+                var env = safeEnvironment
+                env["STATUS_LINE_NAME"] = name
+                let r = Shell.run(path, [], environment: env, timeout: 5)
                 let first = r.stdout.split(separator: "\n").first.map(String.init)?
                     .trimmingCharacters(in: .whitespaces) ?? ""
                 guard !first.isEmpty else {
